@@ -6,6 +6,24 @@ import { Check, X, Calendar, Users, DollarSign, Layout, Palette, Target, CheckSq
 export default function CultureToCircuit() {
   const [activeTab, setActiveTab] = useState("activities")
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({})
+
+  // Load saved checklist from localStorage on component mount
+  useEffect(() => {
+    const savedChecklist = localStorage.getItem("culture-to-circuit-checklist")
+    if (savedChecklist) {
+      try {
+        setCheckedItems(JSON.parse(savedChecklist))
+      } catch (error) {
+        console.error("Error loading saved checklist:", error)
+      }
+    }
+  }, [])
+
+  // Save checklist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("culture-to-circuit-checklist", JSON.stringify(checkedItems))
+  }, [checkedItems])
+
   const [modalOpen, setModalOpen] = useState(false)
   const [modalContent, setModalContent] = useState<any>(null)
   const [progress, setProgress] = useState(0)
