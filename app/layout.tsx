@@ -7,9 +7,8 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Culture to Circuit | Kadayawan Kodex Booth",
-  description:
-    "Bridging Mindanao Heritage with Computer Engineering Innovation - Interactive booth experience connecting traditional culture to modern technology",
-  keywords: "Kadayawan, Computer Engineering, Mindanao Culture, Technology, Heritage, Innovation",
+  description: "Bridging Mindanao heritage with modern technology - Interactive booth planning for Kadayawan Kodex",
+  keywords: "Kadayawan, Kodex, Culture, Technology, Mindanao, Heritage, Computer Engineering, Booth",
     generator: 'v0.dev'
 }
 

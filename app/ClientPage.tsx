@@ -1,12 +1,15 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Check, X, Calendar, Users, DollarSign, Layout, Palette, Target, CheckSquare } from "lucide-react"
+import { Check, X, Calendar, Users, DollarSign, Layout, Palette, Target, CheckSquare, Plus } from "lucide-react"
 
 export default function CultureToCircuit() {
   const [activeTab, setActiveTab] = useState("activities")
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({})
-  const [roleAssignments, setRoleAssignments] = useState<{ [key: string]: string }>({})
+  const [roleAssignments, setRoleAssignments] = useState<{ [key: string]: string[] }>({})
+  const [newMemberInputs, setNewMemberInputs] = useState<{ [key: string]: string }>({})
 
   // Load saved checklist from localStorage on component mount
   useEffect(() => {
@@ -30,7 +33,17 @@ export default function CultureToCircuit() {
     const savedRoles = localStorage.getItem("culture-to-circuit-roles")
     if (savedRoles) {
       try {
-        setRoleAssignments(JSON.parse(savedRoles))
+        const parsed = JSON.parse(savedRoles)
+        // Convert old string format to array format if needed
+        const converted: { [key: string]: string[] } = {}
+        Object.keys(parsed).forEach((key) => {
+          if (typeof parsed[key] === "string") {
+            converted[key] = parsed[key] ? [parsed[key]] : []
+          } else {
+            converted[key] = parsed[key] || []
+          }
+        })
+        setRoleAssignments(converted)
       } catch (error) {
         console.error("Error loading saved role assignments:", error)
       }
@@ -409,18 +422,39 @@ export default function CultureToCircuit() {
     }))
   }
 
-  const handleRoleAssignment = (roleTitle: string, name: string) => {
+  const addTeamMember = (roleTitle: string) => {
+    const newMember = newMemberInputs[roleTitle]?.trim()
+    if (newMember) {
+      setRoleAssignments((prev) => ({
+        ...prev,
+        [roleTitle]: [...(prev[roleTitle] || []), newMember],
+      }))
+      setNewMemberInputs((prev) => ({
+        ...prev,
+        [roleTitle]: "",
+      }))
+    }
+  }
+
+  const removeTeamMember = (roleTitle: string, memberIndex: number) => {
     setRoleAssignments((prev) => ({
       ...prev,
-      [roleTitle]: name,
+      [roleTitle]: (prev[roleTitle] || []).filter((_, index) => index !== memberIndex),
     }))
   }
 
-  const clearRoleAssignment = (roleTitle: string) => {
-    setRoleAssignments((prev) => ({
+  const handleNewMemberInput = (roleTitle: string, value: string) => {
+    setNewMemberInputs((prev) => ({
       ...prev,
-      [roleTitle]: "",
+      [roleTitle]: value,
     }))
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent, roleTitle: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      addTeamMember(roleTitle)
+    }
   }
 
   const openModal = (content: any) => {
@@ -973,35 +1007,59 @@ export default function CultureToCircuit() {
                     </div>
                     <p className="mb-6 text-gray-300 text-center text-sm">{role.description}</p>
 
-                    {/* Name Assignment Input */}
+                    {/* Team Members List */}
                     <div className="mb-6 bg-white/5 p-4 rounded-xl border border-white/10">
-                      <label className="block text-sm font-bold text-yellow-300 mb-2">
-                        👤 Assigned Team Member(s):
-                      </label>
+                      <label className="block text-sm font-bold text-yellow-300 mb-3">👥 Team Members:</label>
+
+                      {/* Existing team members */}
+                      {roleAssignments[role.title] && roleAssignments[role.title].length > 0 && (
+                        <div className="space-y-2 mb-3">
+                          {roleAssignments[role.title].map((member, memberIndex) => (
+                            <div
+                              key={memberIndex}
+                              className="flex items-center justify-between bg-white/10 px-3 py-2 rounded-lg border border-white/20"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span className="text-sm text-white">{member}</span>
+                              </div>
+                              <button
+                                onClick={() => removeTeamMember(role.title, memberIndex)}
+                                className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                title="Remove member"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add new member input */}
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          value={roleAssignments[role.title] || ""}
-                          onChange={(e) => handleRoleAssignment(role.title, e.target.value)}
-                          placeholder="Enter name(s) for this role..."
+                          value={newMemberInputs[role.title] || ""}
+                          onChange={(e) => handleNewMemberInput(role.title, e.target.value)}
+                          onKeyPress={(e) => handleKeyPress(e, role.title)}
+                          placeholder="Add team member name..."
                           className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300"
                         />
-                        {roleAssignments[role.title] && (
-                          <button
-                            onClick={() => clearRoleAssignment(role.title)}
-                            className="px-3 py-2 bg-red-600/20 border border-red-600/50 rounded-lg text-red-400 hover:bg-red-600/30 transition-all duration-300 flex items-center gap-1"
-                            title="Clear assignment"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => addTeamMember(role.title)}
+                          disabled={!newMemberInputs[role.title]?.trim()}
+                          className="px-3 py-2 bg-green-600/20 border border-green-600/50 rounded-lg text-green-400 hover:bg-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1"
+                          title="Add member"
+                        >
+                          <Plus size={16} />
+                        </button>
                       </div>
-                      {roleAssignments[role.title] && (
-                        <div className="mt-2 text-xs text-green-400 flex items-center gap-1">
-                          <Check size={12} />
-                          <span>Assigned to: {roleAssignments[role.title]}</span>
-                        </div>
-                      )}
+
+                      {/* Team count indicator */}
+                      <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
+                        <span>{roleAssignments[role.title]?.length || 0} member(s) assigned</span>
+                        <span className="text-yellow-400">Press Enter to add</span>
+                      </div>
                     </div>
 
                     <div className="bg-white/5 p-4 rounded-xl">
@@ -1115,16 +1173,19 @@ export default function CultureToCircuit() {
                               <div className="text-xs text-gray-400">{role.members}</div>
                             </div>
                             <div className="text-right">
-                              {roleAssignments[role.title] ? (
+                              {roleAssignments[role.title] && roleAssignments[role.title].length > 0 ? (
                                 <div className="text-xs text-green-400 flex items-center gap-1">
                                   <Check size={12} />
-                                  <span>{roleAssignments[role.title]}</span>
+                                  <span>{roleAssignments[role.title].length} assigned</span>
                                 </div>
                               ) : (
                                 <div className="text-xs text-yellow-400">Not assigned</div>
                               )}
                             </div>
                           </div>
+                          {roleAssignments[role.title] && roleAssignments[role.title].length > 0 && (
+                            <div className="mt-2 text-xs text-gray-300">{roleAssignments[role.title].join(", ")}</div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1134,32 +1195,44 @@ export default function CultureToCircuit() {
                     <div className="space-y-4">
                       <div className="bg-white/5 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">Roles Assigned:</span>
+                          <span className="text-sm">Roles with Members:</span>
                           <span className="font-bold text-purple-400">
-                            {Object.values(roleAssignments).filter((name) => name.trim()).length} / {roles.length}
+                            {Object.values(roleAssignments).filter((members) => members && members.length > 0).length} /{" "}
+                            {roles.length}
                           </span>
                         </div>
                         <div className="bg-white/10 rounded-full h-2 overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500"
                             style={{
-                              width: `${(Object.values(roleAssignments).filter((name) => name.trim()).length / roles.length) * 100}%`,
+                              width: `${(Object.values(roleAssignments).filter((members) => members && members.length > 0).length / roles.length) * 100}%`,
                             }}
                           ></div>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          <span>Complete team assignments enable better coordination</span>
+                      <div className="bg-white/5 p-4 rounded-xl">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">Total Team Members:</span>
+                          <span className="font-bold text-purple-400">
+                            {Object.values(roleAssignments).reduce(
+                              (total, members) => total + (members?.length || 0),
+                              0,
+                            )}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                          <span>Clear responsibilities improve event execution</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span>Named roles create accountability and ownership</span>
+                        <div className="text-xs text-gray-400">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <span>Each role can have multiple team members</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                            <span>Press Enter or click + to add members</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                            <span>Click X to remove individual members</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1459,7 +1532,7 @@ export default function CultureToCircuit() {
                           <span>Cultural wisdom enhancing technological solutions</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <div classNameclassName="w-1.5 h-1.5 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span>Sustainable innovation inspired by traditional practices</span>
                         </li>
                       </ul>
