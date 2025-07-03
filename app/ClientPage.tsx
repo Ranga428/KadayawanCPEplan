@@ -6,6 +6,7 @@ import { Check, X, Calendar, Users, DollarSign, Layout, Palette, Target, CheckSq
 export default function CultureToCircuit() {
   const [activeTab, setActiveTab] = useState("activities")
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({})
+  const [roleAssignments, setRoleAssignments] = useState<{ [key: string]: string }>({})
 
   // Load saved checklist from localStorage on component mount
   useEffect(() => {
@@ -23,6 +24,23 @@ export default function CultureToCircuit() {
   useEffect(() => {
     localStorage.setItem("culture-to-circuit-checklist", JSON.stringify(checkedItems))
   }, [checkedItems])
+
+  // Load saved role assignments from localStorage on component mount
+  useEffect(() => {
+    const savedRoles = localStorage.getItem("culture-to-circuit-roles")
+    if (savedRoles) {
+      try {
+        setRoleAssignments(JSON.parse(savedRoles))
+      } catch (error) {
+        console.error("Error loading saved role assignments:", error)
+      }
+    }
+  }, [])
+
+  // Save role assignments to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("culture-to-circuit-roles", JSON.stringify(roleAssignments))
+  }, [roleAssignments])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalContent, setModalContent] = useState<any>(null)
@@ -388,6 +406,20 @@ export default function CultureToCircuit() {
     setCheckedItems((prev) => ({
       ...prev,
       [id]: !prev[id],
+    }))
+  }
+
+  const handleRoleAssignment = (roleTitle: string, name: string) => {
+    setRoleAssignments((prev) => ({
+      ...prev,
+      [roleTitle]: name,
+    }))
+  }
+
+  const clearRoleAssignment = (roleTitle: string) => {
+    setRoleAssignments((prev) => ({
+      ...prev,
+      [roleTitle]: "",
     }))
   }
 
@@ -931,7 +963,7 @@ export default function CultureToCircuit() {
                 {roles.map((role, index) => (
                   <div
                     key={index}
-                    className="bg-gradient-to-br from-red-600/10 to-yellow-600/10 p-8 rounded-2xl border-2 border-red-600/30 transition-all duration-300 hover:-translate-y-2 cursor-pointer"
+                    className="bg-gradient-to-br from-red-600/10 to-yellow-600/10 p-8 rounded-2xl border-2 border-red-600/30 transition-all duration-300 hover:-translate-y-2"
                   >
                     <h3 className="text-xl font-bold mb-2 text-yellow-400 text-center">{role.title}</h3>
                     <div className="text-center mb-4">
@@ -940,6 +972,38 @@ export default function CultureToCircuit() {
                       </span>
                     </div>
                     <p className="mb-6 text-gray-300 text-center text-sm">{role.description}</p>
+
+                    {/* Name Assignment Input */}
+                    <div className="mb-6 bg-white/5 p-4 rounded-xl border border-white/10">
+                      <label className="block text-sm font-bold text-yellow-300 mb-2">
+                        👤 Assigned Team Member(s):
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={roleAssignments[role.title] || ""}
+                          onChange={(e) => handleRoleAssignment(role.title, e.target.value)}
+                          placeholder="Enter name(s) for this role..."
+                          className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300"
+                        />
+                        {roleAssignments[role.title] && (
+                          <button
+                            onClick={() => clearRoleAssignment(role.title)}
+                            className="px-3 py-2 bg-red-600/20 border border-red-600/50 rounded-lg text-red-400 hover:bg-red-600/30 transition-all duration-300 flex items-center gap-1"
+                            title="Clear assignment"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {roleAssignments[role.title] && (
+                        <div className="mt-2 text-xs text-green-400 flex items-center gap-1">
+                          <Check size={12} />
+                          <span>Assigned to: {roleAssignments[role.title]}</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="bg-white/5 p-4 rounded-xl">
                       <h4 className="font-bold mb-3 text-yellow-300">Key Responsibilities:</h4>
                       <ul className="space-y-2">
@@ -1034,65 +1098,71 @@ export default function CultureToCircuit() {
                 </div>
               </div>
 
-              {/* Team Assignment Chart */}
-              <div className="bg-yellow-600/10 p-6 rounded-2xl border border-yellow-600/30">
-                <h3 className="text-xl font-bold mb-4 text-yellow-400">📋 Culture to Circuit Team Deployment</h3>
+              {/* Team Assignment Summary */}
+              <div className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 p-8 rounded-2xl border border-purple-600/30">
+                <h3 className="text-2xl font-bold mb-6 text-center text-purple-400">
+                  📋 Culture to Circuit Team Assignments
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-bold text-yellow-300 mb-3">Heritage-Tech Bridge Roles</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Bridge Coordinator:</span>
-                        <span className="text-yellow-400">1 person</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Technical Bridge Team:</span>
-                        <span className="text-yellow-400">4 people</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Cultural Wisdom Keepers:</span>
-                        <span className="text-yellow-400">4 people</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Experience Guides:</span>
-                        <span className="text-yellow-400">4 people</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Heritage Preservers:</span>
-                        <span className="text-yellow-400">3 people</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Story Weavers:</span>
-                        <span className="text-yellow-400">2 people</span>
-                      </div>
-                      <div className="border-t border-yellow-600/30 pt-2 mt-2">
-                        <div className="flex justify-between font-bold">
-                          <span>Total Bridge Builders:</span>
-                          <span className="text-yellow-400">18 people</span>
+                    <h4 className="font-bold text-purple-300 mb-4">🌉 Assigned Bridge Builders</h4>
+                    <div className="space-y-3">
+                      {roles.map((role, index) => (
+                        <div key={index} className="bg-white/5 p-3 rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-bold text-sm text-purple-200">{role.title}</div>
+                              <div className="text-xs text-gray-400">{role.members}</div>
+                            </div>
+                            <div className="text-right">
+                              {roleAssignments[role.title] ? (
+                                <div className="text-xs text-green-400 flex items-center gap-1">
+                                  <Check size={12} />
+                                  <span>{roleAssignments[role.title]}</span>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-yellow-400">Not assigned</div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-bold text-yellow-300 mb-3">Cultural-Tech Integration</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>Every technical role includes cultural education component</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>Cultural ambassadors learn basic technology concepts</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>All activities demonstrate heritage-innovation connection</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>Team members become cultural-tech bridge ambassadors</span>
-                      </li>
-                    </ul>
+                    <h4 className="font-bold text-purple-300 mb-4">📊 Assignment Progress</h4>
+                    <div className="space-y-4">
+                      <div className="bg-white/5 p-4 rounded-xl">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">Roles Assigned:</span>
+                          <span className="font-bold text-purple-400">
+                            {Object.values(roleAssignments).filter((name) => name.trim()).length} / {roles.length}
+                          </span>
+                        </div>
+                        <div className="bg-white/10 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500"
+                            style={{
+                              width: `${(Object.values(roleAssignments).filter((name) => name.trim()).length / roles.length) * 100}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <span>Complete team assignments enable better coordination</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                          <span>Clear responsibilities improve event execution</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span>Named roles create accountability and ownership</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
